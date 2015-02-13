@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <dirent.h>
 
 // Simplifed xv6 shell.
 
@@ -38,6 +40,7 @@ struct pipecmd {
 
 int fork1(void);  // Fork but exits on failure.
 struct cmd *parsecmd(char*);
+char *search_path(char *exe);
 
 // Execute cmd.  Never returns.
 void
@@ -51,6 +54,7 @@ runcmd(struct cmd *cmd)
   if(cmd == 0)
     exit(0);
   
+  errno = 0;
   switch(cmd->type){
   default:
     fprintf(stderr, "unknown runcmd\n");
@@ -60,8 +64,8 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit(0);
-    fprintf(stderr, "exec not implemented\n");
-    // Your code here ...
+    execv(search_path(ecmd->argv[0]), ecmd->argv);
+    fprintf(stderr, "execv returned with error: %s \n", strerror(errno));
     break;
 
   case '>':
@@ -79,6 +83,38 @@ runcmd(struct cmd *cmd)
     break;
   }    
   exit(0);
+}
+
+// List through directories in $PATH to find given executable.
+// Returns the given executable if not found in any of the $PATH
+// directoties.
+char *
+search_path(char *exe)
+{
+  DIR *d;
+  struct dirent *dir;
+
+  char *paths = getenv("PATH");
+  char *path_dir = strtok(paths, ":");
+  while (path_dir != NULL) {
+    d = opendir(path_dir);
+    if (d == NULL) {
+      fprintf(stderr, "cannot open dir: %s", strerror(errno));
+    } else {
+      while ((dir = readdir(d)) != NULL) {
+        if (strcmp(dir->d_name, exe) == 0) {
+          char *final_path = malloc(strlen(path_dir) + strlen(exe) + 2);
+          final_path = strcat(final_path, path_dir);
+          final_path = strcat(final_path, "/");
+          final_path = strcat(final_path, exe);
+          return final_path;
+        }
+      }
+    }
+
+    path_dir = strtok(NULL, ":");
+  }
+  return exe;
 }
 
 int
