@@ -4,16 +4,38 @@
 #include <fcntl.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <dirent.h>
 
+// I won't have time to implement the challenge exercises but
+// here are my thoughts on how I would go about implementing them
+// and what areas of the current code would need change.
+//
+// -- Lists of commands would be parsed and placed into an array
+// of pointers to struct cmd. That array would have to be dynamically
+// re-allocated everytime a new command is encountered using realloc.
+// Each command in that list will be executed in it's own child. The
+// return status of the child will not interpreted in any special
+// way except for the last child. The return status of the last
+// command will be the return status of the whole line. If the
+// commands were chained using '||' or '&&' then the return of
+// status of each child would be significant.
+//
+// -- A subshell would be parsed and executed in pretty much the same
+// way as an execcmd.
+//
+// -- A background command would be parsed into it's own cmd struct,
+// a child would be forked and the parent would exit immediately after
+// the fork.
+
 // Simplifed xv6 shell.
 
 #define MAXARGS 10
 
-// All commands have at least a type. Have looked at the type, the code
+// All commands have at least a type. Having looked at the type, the code
 // typically casts the *cmd to some specific cmd type.
 struct cmd {
   int type;          //  ' ' (exec), | (pipe), '<' or '>' for redirection
@@ -40,9 +62,12 @@ struct pipecmd {
 
 int fork1(void);  // Fork but exits on failure.
 struct cmd *parsecmd(char*);
-char *search_path(char *exe);
+void setup_redirection(struct redircmd*);
+void dup2_wrapped(int, int);
+char *search_path(char*); // Recursively search through all paths listed
+                          // in $PATH to find the given executabe
 
-// Execute cmd.  Never returns.
+// Execute cmd.  Never returns. Executes in the child.
 void
 runcmd(struct cmd *cmd)
 {
@@ -52,37 +77,85 @@ runcmd(struct cmd *cmd)
   struct redircmd *rcmd;
 
   if(cmd == 0)
-    exit(0);
+    exit(EXIT_SUCCESS);
   
   errno = 0;
   switch(cmd->type){
   default:
-    fprintf(stderr, "unknown runcmd\n");
-    exit(-1);
+    fprintf(stderr, "unknown commnad type\n");
+    exit(EXIT_FAILURE);
 
   case ' ':
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
-      exit(0);
+      exit(EXIT_SUCCESS);
     execv(search_path(ecmd->argv[0]), ecmd->argv);
-    fprintf(stderr, "execv returned with error: %s \n", strerror(errno));
-    break;
+    fprintf(stderr, "execv returned with error: %s\n", strerror(errno));
+    exit(EXIT_FAILURE);
 
   case '>':
   case '<':
     rcmd = (struct redircmd*)cmd;
-    fprintf(stderr, "redir not implemented\n");
-    // Your code here ...
+    setup_redirection(rcmd);
     runcmd(rcmd->cmd);
-    break;
 
   case '|':
     pcmd = (struct pipecmd*)cmd;
-    fprintf(stderr, "pipe not implemented\n");
-    // Your code here ...
-    break;
+    int result = pipe(p);
+    if (result == -1) {
+      fprintf(stderr, "pipe system call did not complete successfully: %s\n",\
+                      strerror(errno));
+      exit(EXIT_FAILURE);
+    }
+
+    if (fork1() == 0) {  // child1 executes pcmd->left
+      close(p[0]);
+      dup2_wrapped(p[1], STDOUT_FILENO);
+      close(p[1]);
+      runcmd(pcmd->left);
+    }
+    if (fork1() == 0) { // child2 executes pcmd->right
+      close(p[1]);
+      dup2_wrapped(p[0], STDIN_FILENO);
+      close(p[0]);
+      runcmd(pcmd->right);
+    }
+    close(p[0]);
+    close(p[1]);
+    wait(&r);
+    wait(&r);
+    exit(EXIT_SUCCESS);
   }    
-  exit(0);
+  exit(EXIT_FAILURE); // should never get here
+}
+
+void
+setup_redirection(struct redircmd *cmd)
+{
+  int redirection_fd = 0;
+  if (cmd->type == '>') { // output redirection
+    redirection_fd = open(cmd->file, cmd->mode, S_IRWXU);
+  } else { // input redirection
+    redirection_fd = open(cmd->file, cmd->mode);
+  }
+  if (redirection_fd < 0) {
+    fprintf(stderr, "failed to open file for redirection: %s\n",\
+                    strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  dup2_wrapped(redirection_fd, cmd->fd);
+}
+
+// wrapper around the dup2 system call used to check for errors
+void
+dup2_wrapped(int old_fd, int new_fd)
+{
+  int result = dup2(old_fd, new_fd);
+  if (result < 0) {
+    fprintf(stderr, "failed to dup file descriptors: %s\n", \
+                    strerror(errno));
+    exit(EXIT_FAILURE);
+  }
 }
 
 // List through directories in $PATH to find given executable.
@@ -134,7 +207,7 @@ int
 main(void)
 {
   static char buf[100];
-  int fd, r;
+  int r;
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
@@ -150,7 +223,7 @@ main(void)
       runcmd(parsecmd(buf));
     wait(&r);
   }
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 int
