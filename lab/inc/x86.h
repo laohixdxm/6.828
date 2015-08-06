@@ -32,6 +32,7 @@ static __inline uint32_t read_eflags(void) __attribute__((always_inline));
 static __inline void write_eflags(uint32_t eflags) __attribute__((always_inline));
 static __inline uint32_t read_ebp(void) __attribute__((always_inline));
 static __inline uint32_t read_esp(void) __attribute__((always_inline));
+static __inline uint32_t read_byte_at_addr(uint32_t *addr) __attribute__((always_inline));
 static __inline void cpuid(uint32_t info, uint32_t *eaxp, uint32_t *ebxp, uint32_t *ecxp, uint32_t *edxp);
 static __inline uint64_t read_tsc(void) __attribute__((always_inline));
 
@@ -253,6 +254,14 @@ read_esp(void)
 	uint32_t esp;
 	__asm __volatile("movl %%esp,%0" : "=r" (esp));
 	return esp;
+}
+
+static __inline uint32_t
+read_byte_at_addr(uint32_t *addr)
+{
+	uint32_t val;
+	__asm __volatile("movl (%1),%0" : "=r" (val) : "r" (addr));
+	return val;
 }
 
 static __inline void

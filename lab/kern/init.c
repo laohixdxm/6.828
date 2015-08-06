@@ -3,6 +3,7 @@
 #include <inc/stdio.h>
 #include <inc/string.h>
 #include <inc/assert.h>
+#include <inc/x86.h>
 
 #include <kern/monitor.h>
 #include <kern/console.h>
@@ -36,7 +37,7 @@ i386_init(void)
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
 	// Test the stack backtrace function (lab 1 only)
-	test_backtrace(5);
+	test_backtrace(-1);
 
 	// Drop into the kernel monitor.
 	while (1)
