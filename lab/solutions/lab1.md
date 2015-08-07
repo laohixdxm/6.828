@@ -3,11 +3,11 @@
 ## Exercise 1
 
 To learn assembly I read the
-(PC Assembly Book)[http://www.drpaulcarter.com/pcasm/] linked in the resources
+[PC Assembly Book](http://www.drpaulcarter.com/pcasm/) linked in the resources
 section. I also watched the lectures for the Intro to x86 class over at
 opensecuritytraining.info. As a final test I reverse engineered the CMU binary
 bomb. You can find my solution
-(here)[https://github.com/petroav/CMU-assembly-challenge].
+[here](https://github.com/petroav/CMU-assembly-challenge).
 
 ## Exercise 2
 
@@ -100,7 +100,7 @@ causes the switch from 16- to 32-bit mode?
 The switch from 16 bit (real) mode to 32 bit (protected) mode has two
 pre-requisites: (1) a global descriptor table needs to be loaded so we can
 switch to a code segment that supports 32 bits and (2) we need to enable
-protected mode in the CRO (control 0) register (it's the first bit).
+protected mode in the CR0 (control 0) register (it's the first bit).
 
 Pre-requisite (1) is done at `0x7c1e: lgdtw  0x7c64` while pre-requisite (2) is
 done over the following three instructions:
@@ -120,13 +120,12 @@ first instruction of the kernel it just loaded?
 
 The last instruction executed by the bootloader is a call into the kernel:
 `0x7d61:      call   *0x10018`. The address to call into is derived by reading
-the ELF header, specifically the `e_entry` field which contains entry point of
-the executable in question.
+the ELF header, specifically the `e_entry` field which contains the entry point
+of the executable in question.
 
 The first instruction executed by the kernel is:
 `0x10000c:    movw   $0x1234,0x472`. This is confirmed by the `kernel.asm` file,
-which has `movw   $0x1234,0x472` as the first instruction, commented with
-'warm boot', whatever that means.
+which has `movw   $0x1234,0x472` as the first instruction.
 
 - Where is the first instruction of the kernel?
 
@@ -150,7 +149,8 @@ bootloader code then iterates over all segments and loads each one.
 ## Exercise 4
 
 Read through the relevant sections of K&R to refresh my pointer arithmetic. I
-did have some trouble figuring out that 3[c] was syntactic sugar for `*(c + 3)`.
+did have some trouble figuring out that `3[c]` was syntactic sugar for
+`*(c + 3)`.
 
 ## Exercise 5
 
@@ -189,8 +189,7 @@ jmp	*%eax             # FAIL
 ## Exercise 8
 
 Filled in the octal printer code and verified that it worked by examining the
-QEMU printouts during bootup, where it tries to print 6828 in octal
-(6828 base 10 == 15254 base 8).
+QEMU printouts during bootup, (6828 base 10 == 15254 base 8).
 
 1. `printf.c` and `console.c` interface via the `cputchar()` function.
 `printf.c` wraps `cputchar()` with the `putch()` function that increments
@@ -205,7 +204,7 @@ Thus, if `crt_pos` > `CRT_SIZE` then the last character written is outside the
 current display buffer. The loop shifts back the buffer 80 columns, essentially
 printing a new line on the screen.
 
-3. To try out the code we can add it to the init.c#i386_init() function.
+3. To try out the code we can add it to the `init.c#i386_init()` function.
 - `fmt` points to the format string, namely `x %d, y %x, z %d\n`, and `ap`
 points to a `va_list`, which presumably stands for variable argument list.
 If you print `ap` you can see that it is a pointer, which is
@@ -315,3 +314,16 @@ argument passed to `backtrace()` because technically that word was allocated by
 the previous call of `backtrace()`.
 
 ## Exercise 11
+
+Initial `mon_backtrace()` implementation done.
+
+## Exercise 12
+
+The kernel linker script, `kernel.ld`, contains code that allocates space for
+debugging symbols in the stabs format. The `objdump -h` command further confirms
+this theory because it lists two sections `.stab` and `.stabstr`. The `-G` flag
+to `objdump` actually lists the contents of the `.stabs` section. Going back
+to the bootloader code we can see that it loads the entire kernel image, which
+as we just saw contains all the stabs debugging info.
+
+After writing the missing code, the test script (`grade-lab1`) succeeds.
