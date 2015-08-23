@@ -110,3 +110,18 @@ We're able to run at a low EIP after enabling paging because the page directory
 setup in `entrypgdir.c` maps virtual addresses 0 - 4MB to physical 0 - 4MB. The
 transition is necessary because the rest of the kernel is linked at high
 addresses.
+
+## Challenge
+
+I chose to complete the challenge exercise that asked you to add debugging
+functions to the kernel monitor. I added two: `showmappings` and `setperms`.
+The first method will print the mapping of virtual addresses to their pages,
+those pages' physical address and the permissions (both in human readable and
+in binary). If the virtual address is not mapped, the function prints out
+a message.
+
+`setperms` will set the permissions of the page table and page directory
+entry corresponding to the given virtual address. If the virtual adddress is
+not mapped, then the function prints an error message. The functions takes
+two arguments, the first being the hex virtual address and the second being the
+permissions in hex.

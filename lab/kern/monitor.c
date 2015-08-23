@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -25,10 +26,122 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
   { "backtrace", "Display the current stack trace", mon_backtrace },
+  { "showmappings", "Display the mappings of the given virtual address range. \
+Syntax: showmappings 0xstart 0xend", showmappings },
+  { "setperms", "Set the permissions of the given page. Syntax: setperms \
+0xvirtualaddr 0xperms", setperms },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
 /***** Implementations of basic kernel monitor commands *****/
+
+int
+setperms(int argc, char **argv, struct Trapframe *tf)
+{
+  pte_t *pte;
+  pde_t *pde;
+  char *end_ptr = argv[1] + strlen(argv[1]) + 1;
+  uintptr_t va = (uintptr_t) strtol(argv[1], &end_ptr, 16);
+  end_ptr = argv[2] + strlen(argv[2]) + 1;
+  uintptr_t perms = (uintptr_t) strtol(argv[2], &end_ptr, 16);
+
+  pte = pgdir_walk(kern_pgdir, (void *) va, false);
+  if (!pte) {
+    cprintf("Page not mapped.\n");
+    return 1;
+  }
+  perms &= 0xFFF; // ensure perms are only lowest 12 bits
+  *pte &= ~0xFFF; // zero out page's permissions
+  *pte |= perms; // set new permissions
+
+  pde = &kern_pgdir[PDX(va)]; // now do the same for the page directory entry
+  *pde &= ~0xFFF;
+  *pde |= perms;
+  cprintf("Successfully set permissions on given page.\n");
+  return 0;
+}
+
+int
+showmappings(int argc, char **argv, struct Trapframe *tf)
+{
+  pte_t *pte;
+  pte_t pte_copy;
+  physaddr_t page;
+  int i;
+
+  char *end_ptr = argv[1] + strlen(argv[1]) + 1;
+  uintptr_t current_va = (uintptr_t) strtol(argv[1], &end_ptr, 16);
+  end_ptr = argv[2] + strlen(argv[2]) + 1;
+  uintptr_t end_va = (uintptr_t) strtol(argv[2], &end_ptr, 16);
+  uintptr_t page_size = 0x1000;
+
+  while (current_va <= end_va) {
+    pte = pgdir_walk(kern_pgdir, (void *) current_va, false);
+    if (!pte || !(*pte & PTE_P)) { 
+      cprintf("virtual [%08x] - not mapped\n", current_va);
+    } else {
+      cprintf("virtual [%08x] - physical [%08x] - perm ",
+          current_va, PTE_ADDR(*pte));
+      pte_copy = *pte;
+      // Couldn't think of a more elegant way to extract perms,
+      // feel free to message me if you have a better solution.
+      cprintf("[");
+      for (i = 0; i < 9; i++) {
+        if (pte_copy & PTE_AVAIL) {
+          cprintf("AV");
+          pte_copy &= ~PTE_AVAIL; // turn that bit off
+        } else if (pte_copy & PTE_G) {
+          cprintf("G");
+          pte_copy &= ~PTE_G;
+        } else if (pte_copy & PTE_PS) {
+          cprintf("PS");
+          pte_copy &= ~PTE_PS;
+        } else if (pte_copy & PTE_D) {
+          cprintf("D");
+          pte_copy &= ~PTE_D;
+        } else if (pte_copy & PTE_A) {
+          cprintf("A");
+          pte_copy &= ~PTE_A;
+        } else if (pte_copy & PTE_PCD) {
+          cprintf("CD");
+          pte_copy &= ~PTE_PCD;
+        } else if (pte_copy & PTE_PWT) {
+          cprintf("WT");
+          pte_copy &= ~PTE_PWT;
+        } else if (pte_copy & PTE_U) {
+          cprintf("U");
+          pte_copy &= ~PTE_U;
+        } else if (pte_copy & PTE_W) {
+          cprintf("W");
+          pte_copy &= ~PTE_W;
+        } else {
+          cprintf("-");
+        }
+      }
+      cprintf("P"); // we've gotten this far, the page is present
+    }
+    cprintf("] [%s]\n", convert_to_binary(*pte & 0xFFF));
+
+    current_va += page_size;
+  }
+  return 0;
+}
+
+char *
+convert_to_binary(uint32_t raw_binary)
+{
+  static char *output = "000000000000";
+  int i;
+
+  for (i = 11; i >= 0; i--) {
+    if (raw_binary & 0x1)
+      output[i] = '1';
+    else
+      output[i] = '0';
+    raw_binary = raw_binary >> 1;
+  }
+  return output;
+}
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
