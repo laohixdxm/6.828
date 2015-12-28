@@ -115,7 +115,17 @@ void
 env_init(void)
 {
 	// Set up envs array
-	// LAB 3: Your code here.
+	int i = 0;
+	struct Env env;
+	for (; i < NENV; i++) {
+		envs[i].env_status = ENV_FREE;
+		envs[i].env_id = 0;
+		if (i + 1 == NENV)
+			envs[i].env_link = NULL;
+		else
+			envs[i].env_link = &envs[i + 1];
+	}
+	env_free_list = &envs[0];
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -163,7 +173,8 @@ env_setup_vm(struct Env *e)
 		return -E_NO_MEM;
 
 	// Now, set e->env_pgdir and initialize the page directory.
-	//
+	//e->env_pgdir = p;
+
 	// Hint:
 	//    - The VA space of all envs is identical above UTOP
 	//	(except at UVPT, which we've set below).

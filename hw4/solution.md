@@ -18,7 +18,7 @@ sys_sbrk(void)
 }
 ```
 
-We're going to get a page fault as soon as we invoke any user program on the xv6 prompt. The code will try to reference a memory address which it thinks it has access to and the MMU will generate a hardware interupt.
+We're going to get a page fault as soon as we invoke any user program on the xv6 prompt. The code will try to reference a memory address which it thinks it has access to and the MMU will generate a hardware interrupt.
 
 ## Part Two
 

@@ -22,6 +22,7 @@ endif
 LABSETUP ?= ./
 
 TOP = .
+QEMU = /home/anton/workspace/qemu/build/bin/qemu-system-i386
 
 # Cross-compiler jos toolchain
 #

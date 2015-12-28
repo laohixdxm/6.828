@@ -148,12 +148,14 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
 	// Your code goes here:
-  pages = (struct PageInfo *) boot_alloc(npages * sizeof(struct PageInfo));
-  memset(pages, 0, npages * sizeof(struct PageInfo));
+ 	pages = (struct PageInfo *) boot_alloc(npages * sizeof(struct PageInfo));
+ 	memset(pages, 0, npages * sizeof(struct PageInfo));
 
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
+  envs = (struct Env *) boot_alloc(NENV * sizeof(struct Env));
+  memset(envs, 0, NENV * sizeof(struct Env));
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -161,7 +163,7 @@ mem_init(void)
 	// memory management will go through the page_* functions. In
 	// particular, we can now map memory using boot_map_region
 	// or page_insert
-  page_init();
+ 	page_init();
 
 	check_page_free_list(1);
 	check_page_alloc();
@@ -177,8 +179,8 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-  uint32_t size = ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE);
-  boot_map_region(kern_pgdir, UPAGES, size, PADDR(pages), PTE_U | PTE_P);
+ 	uint32_t size = ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE);
+ 	boot_map_region(kern_pgdir, UPAGES, size, PADDR(pages), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -187,6 +189,8 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+ 	size = ROUNDUP(NENV * sizeof(struct Env), PGSIZE);
+ 	boot_map_region(kern_pgdir, UENVS, size, PADDR(envs), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -199,8 +203,8 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-  boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE,\
-      PADDR(bootstack), PTE_W | PTE_P);
+  	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE,\
+  		PADDR(bootstack), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -210,7 +214,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-  boot_map_region(kern_pgdir, KERNBASE, 0xffffffff - KERNBASE, 0, PTE_W | PTE_U);
+  	boot_map_region(kern_pgdir, KERNBASE, 0xffffffff - KERNBASE, 0, PTE_W | PTE_U);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -317,7 +321,7 @@ page_alloc(int alloc_flags)
   if (alloc_flags & ALLOC_ZERO)
     memset(page2kva(pp), 0, PGSIZE); 
 
-	return pp;
+  return pp;
 }
 
 //
