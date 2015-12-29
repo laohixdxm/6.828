@@ -154,8 +154,8 @@ mem_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
-  envs = (struct Env *) boot_alloc(NENV * sizeof(struct Env));
-  memset(envs, 0, NENV * sizeof(struct Env));
+  	envs = (struct Env *) boot_alloc(NENV * sizeof(struct Env));
+  	memset(envs, 0, NENV * sizeof(struct Env));
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -465,7 +465,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 
   *pte = (page2pa(pp) | perm | PTE_P);
   pgdir[PDX(va)] |= perm;
-	return 0;
+  return 0;
 }
 
 //
