@@ -23,3 +23,7 @@ Read the relevant sections of the Intel manual.
 2. I didn't have to do anything extra to make `user/softint` work. `softint` produces interrupt 13 because it doesn't have permissions to invoke a page fault (`int $14`). When setting up the IDT in `trap_init`, interrupt 14 is mapped so that only code at CPL 0 can invoke it. `softint` is running in user space and therefore has a CPL of 3 and is not allowed to invoke `int $14`. The processor catches this privilege mismatch and raises a general protection fault (`int $13`). Note that this is not a nested interrupt, the page fault requested from `softint` is never processed. I verified this by setting a breakpoint at both the `int $14` and `int $13` handlers and never hit the handler for `int $14`.
 
   As written at this stage of the lab, the page fault handler of the kernel will shut down any user process that invokes it. Allowing user processes to manipulate virtual memory by asking for pages to be mapped is a major violation of isolation and should not be allowed.
+
+## Exercise 5
+
+To support page faults, I added a case statement in `trap_dispatch` that calls `page_fault_handler`. More importantly however, the user test code uncovered a bug in my page mappings. I was mapping all pages above `KERNBASE` with user privileges.
