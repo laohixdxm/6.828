@@ -200,6 +200,14 @@ trap_dispatch(struct Trapframe *tf)
 		case (T_PGFLT):
 			page_fault_handler(tf);
 			break;
+		case (T_BRKPT):
+			print_trapframe(tf);
+			monitor(tf);
+			break;
+		case (T_DEBUG):
+			print_trapframe(tf);
+			monitor(tf);
+			break;
 		default:
 			// Unexpected trap: The user process or the kernel has a bug.
 			print_trapframe(tf);

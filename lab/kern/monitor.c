@@ -31,10 +31,26 @@ static struct Command commands[] = {
 Syntax: showmappings 0xstart 0xend", showmappings },
   { "setperms", "Set the permissions of the given page. Syntax: setperms \
 0xvirtualaddr 0xperms", setperms },
+  { "singlestep", "Break at the next instruction", single_step },
+  { "continue", "Continue execution at the regular rate", continue_exec },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
 /***** Implementations of basic kernel monitor commands *****/
+
+int
+continue_exec(int argc, char **argv, struct Trapframe *tf)
+{
+  tf->tf_eflags &= ~FL_TF;
+  return -1;
+}
+
+int
+single_step(int argc, char **argv, struct Trapframe *tf)
+{
+  tf->tf_eflags |= FL_TF;
+  return -1;
+}
 
 int
 setperms(int argc, char **argv, struct Trapframe *tf)

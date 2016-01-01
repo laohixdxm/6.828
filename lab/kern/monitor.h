@@ -18,5 +18,7 @@ int mon_backtrace(int argc, char **argv, struct Trapframe *tf);
 int showmappings(int argc, char **argv, struct Trapframe *tf);
 char *convert_to_binary(uint32_t raw_binary);
 int setperms(int argc, char **argv, struct Trapframe *tf);
+int single_step(int argc, char **argv, struct Trapframe *tf);
+int continue_exec(int argc, char **argv, struct Trapframe *tf);
 
 #endif	// !JOS_KERN_MONITOR_H
