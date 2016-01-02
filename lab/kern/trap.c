@@ -119,6 +119,9 @@ trap_init(void)
 	SETGATE(idt[T_MCHK], 0, GD_KT, t_mchk, 0);
 	SETGATE(idt[T_SIMDERR], 0, GD_KT, t_simderr, 0);
 
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, t_syscall, 3);
+
+
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -194,6 +197,8 @@ print_regs(struct PushRegs *regs)
 static void
 trap_dispatch(struct Trapframe *tf)
 {
+	int32_t ret_code;
+
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 	switch(tf->tf_trapno) {
@@ -207,6 +212,16 @@ trap_dispatch(struct Trapframe *tf)
 		case (T_DEBUG):
 			print_trapframe(tf);
 			monitor(tf);
+			break;
+		case (T_SYSCALL):
+			ret_code = syscall(
+				tf->tf_regs.reg_eax,
+				tf->tf_regs.reg_edx,
+				tf->tf_regs.reg_ecx,
+				tf->tf_regs.reg_ebx,
+				tf->tf_regs.reg_edi,
+				tf->tf_regs.reg_esi);
+			tf->tf_regs.reg_eax = ret_code;
 			break;
 		default:
 			// Unexpected trap: The user process or the kernel has a bug.

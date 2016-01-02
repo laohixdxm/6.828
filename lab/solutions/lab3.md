@@ -16,9 +16,7 @@ Read the relevant sections of the Intel manual.
 
 ## Exercise 4
 
-1. The purpose of having a separate handler function for each exception/interrupt is to maintain privilege isolation between user space and the kernel. The handler's function is twofold: (a) pass arguments to the code that is going to handle the exception/interrupt and (b) determine which piece of code will handle the exception/interrupt. By hardcoding both of these pieces of information in the handler functions, the kernel designer prevents user processes from having any influence over the control transfer/privilege escalation.
-
-  If all interrupts were delivered to the same handler, the kernel would have no way to tell which exception/interrupt occurred. That information is stored in the trapframe and is placed there by the handler code which we dispatch to via the IDT. There's no mechanism to pass information to the handler from the IDT during the dispatch. The only way to establish a correspondence is to have a one to one mapping from the IDT descriptor to the handler, to the interrupt.
+1. The purpose of having a separate handler function for each exception/interrupt is to maintain privilege isolation between user space and the kernel. The handler's function is twofold: (a) pass arguments to the code that is going to handle the exception/interrupt and (b) determine which piece of code will handle the exception/interrupt. By hardcoding both of these pieces of information in the handler functions, the kernel designer prevents user processes from having any influence over the control transfer/privilege escalation. A safe and secure way to establish a correspondence is to have a one to one mapping from the IDT descriptor to the handler, to the interrupt.
 
   If all interrupts were delivered to the same handler, there would be no way to assign different permissions to different handlers. For example, you want user code to be able to invoke `T_BRKPT` and `T_SYSCALL` so for those handlers you set DPL in the IDT to 3 but you don't want user code to invoke `T_PGFLT` so for that handler you set DPL to 0.
 
@@ -37,6 +35,10 @@ To support user breakpoints I added another case statement to `trap_dispatch` th
 1. I originally setup the IDT with the correct permissions (DPL = 3) for the breakpoint interrupt. I was aware of this because while reading the IDT setup code in xv6 I noticed that the syscall interrupt gate was given different permissions (DPL = 3) because it was expected to be invoked by user level code. If I had setup the breakpoint interrupt with DPL = 0, like the other interrupts, then the `breakpoint` user code would have generated a general protection fault.
 
 2. The point of these mechanisms is to restrict the influence user level code can have on the kernel. User code can ask for services (syscalls), set breakpoints but cannot manipulate virtual memory (`int $14` in `softint`).
+
+## Exercise 7
+
+Code is complete.
 
 ## Challenge
 
