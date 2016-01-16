@@ -17,15 +17,15 @@
 
 
 struct Command {
-	const char *name;
-	const char *desc;
-	// return -1 to force monitor to exit
-	int (*func)(int argc, char** argv, struct Trapframe* tf);
+  const char *name;
+  const char *desc;
+  // return -1 to force monitor to exit
+  int (*func)(int argc, char** argv, struct Trapframe* tf);
 };
 
 static struct Command commands[] = {
-	{ "help", "Display this list of commands", mon_help },
-	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+  { "help", "Display this list of commands", mon_help },
+  { "kerninfo", "Display information about the kernel", mon_kerninfo },
   { "backtrace", "Display the current stack trace", mon_backtrace },
   { "showmappings", "Display the mappings of the given virtual address range. \
 Syntax: showmappings 0xstart 0xend", showmappings },
@@ -175,7 +175,7 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 {
 	extern char _start[], entry[], etext[], edata[], end[];
 
-	cprintf("Special kernel symbols:\n");
+  cprintf("Special kernel symbols:\n");
 	cprintf("  _start                  %08x (phys)\n", _start);
 	cprintf("  entry  %08x (virt)  %08x (phys)\n", entry, entry - KERNBASE);
 	cprintf("  etext  %08x (virt)  %08x (phys)\n", etext, etext - KERNBASE);
