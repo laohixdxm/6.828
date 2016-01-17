@@ -311,12 +311,14 @@ page_init(void)
 	size_t i;
 	for (i = 0; i < npages; i++) {
 		if (i == 0 || // First page reserved for BIOS structures
-			// Pages used up by the IO hole from 640K to 1MB
-			(npages_basemem <= i && i < npages_basemem + num_pages_io_hole) ||
-			// Pages used up by the kernel and allocated to hold a page dir and
-			// the pages array
-			(npages_basemem + num_pages_io_hole <= i && \
-			i < npages_basemem + num_pages_io_hole + num_kpages)) {
+				i == PGNUM(MPENTRY_PADDR) || // 7th page at MPRENTRY_PADDR, reserved for CPU startup code
+				// Pages used up by the IO hole from 640K to 1MB
+				(npages_basemem <= i && i < npages_basemem + num_pages_io_hole) ||
+				// Pages used up by the kernel and allocated to hold a page dir and
+				// the pages array
+				(npages_basemem + num_pages_io_hole <= i && \
+				i < npages_basemem + num_pages_io_hole + num_kpages)
+			) {
 
 			pages[i].pp_ref = 1;
 			continue;
@@ -597,7 +599,15 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	size_t round_up_size = ROUNDUP(size, PGSIZE);
+	if (base + round_up_size > MMIOLIM)
+		panic("mmio_map_region: requested size to map went over MMIOLIM");
+
+	boot_map_region(kern_pgdir, base, round_up_size, pa, PTE_PCD | PTE_PWT | PTE_W);
+
+	uintptr_t mapped_base = base;
+	base += round_up_size;
+	return (void *) mapped_base;
 }
 
 static uintptr_t user_mem_check_addr;
