@@ -27,3 +27,7 @@ The pointer to the `struct Env` about to be run, works after we switch page tabl
 User environments have their registers saved by the kernel because they need to be able to resume seamlessly (this includes getting back to the right stack `esp` and at the right instruction `eip`) and their interruption is not always predictable. Processes keep temporary data and variables in registers and the process assumes that when it returns, all those values will still be there. It's a like the caller/callee save calling convention except here it is for interrupting the whole process.
 
 The registers are saved on the user environment's stack as part of the trapframe constructed by the `int` instruction and the code in `alltraps`. To restore the state of a new process, JOS uses the `env_pop_tf()` function, which switches first to the new process' stack and the pops all the registers in place.
+
+## Exercise 7
+
+Code is done and `dumbfork` works correctly.
