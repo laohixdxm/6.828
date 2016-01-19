@@ -391,10 +391,50 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
 
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
-}
+	// If the user didn't set a pgfault handler, or the trap-time
+	// stack pointer is out of bounds.
+	if (curenv->env_pgfault_upcall == NULL ||
+		tf->tf_esp > UXSTACKTOP ||
+		(tf->tf_esp > USTACKTOP && tf->tf_esp < UXSTACKTOP - PGSIZE))
+	{
+		cprintf("[%08x] user fault va %08x ip %08x\n",
+			curenv->env_id, fault_va, tf->tf_eip);
+		print_trapframe(tf);
+		env_destroy(curenv);
+	}
 
+	// Determine the top of the exception stack
+	uint32_t exception_stack_top;
+	if (tf->tf_esp < USTACKTOP) {
+		// Switching from user stack to user exception stack
+		exception_stack_top = UXSTACKTOP - sizeof(struct UTrapframe);
+	} else {
+		// Recursive fault, we're already in the exception stack running the
+		// handler code.
+		// Note the -4 at the end, that's for the empty word separating the
+		// two exception trapframes.
+		exception_stack_top = tf->tf_esp - sizeof(struct UTrapframe) - 4;
+	}
+
+	// Make sure we can write to the top of our exception stack. This implicitly
+	// checks two conditions:
+	// 1) if the user process mapped a page from UXSTACKTOP to UXSTACKTOP - PGSIZE
+	// 2) if we've ran over the exception stack, beyond UXSTACKTOP - PGSIZE
+	user_mem_assert(curenv, (void *) tf->tf_esp, 1, PTE_W | PTE_U);
+
+	// Write the UTrapframe to the exception stack
+	struct UTrapframe *u_tf = (struct UTrapframe *) exception_stack_top;
+	u_tf->utf_fault_va = fault_va;
+	u_tf->utf_err = tf->tf_err;
+	u_tf->utf_regs = tf->tf_regs;
+	u_tf->utf_eip = tf->tf_eip;
+	u_tf->utf_eflags = tf->tf_eflags;
+	u_tf->utf_esp = tf->tf_esp;
+
+	// Now adjust the trap frame so that the user process returns to executing
+	// in the exception stack and runs code from the handler.
+	tf->tf_esp = (uintptr_t) exception_stack_top;
+	tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+
+	env_run(curenv);
+}

@@ -31,3 +31,11 @@ The registers are saved on the user environment's stack as part of the trapframe
 ## Exercise 7
 
 Code is done and `dumbfork` works correctly.
+
+## Exercise 8
+
+Code is done.
+
+## Exercise 9
+
+Code is done. If the user environment runs out of space on the exception stack, a page fault will be generated, which will end up in `page_faul_handler()` where the code I just wrote will detect that we've overflown the stack space and will kill the process.
