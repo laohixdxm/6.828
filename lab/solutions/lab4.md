@@ -39,3 +39,7 @@ Code is done.
 ## Exercise 9
 
 Code is done. If the user environment runs out of space on the exception stack, a page fault will be generated, which will end up in `page_faul_handler()` where the code I just wrote will detect that we've overflown the stack space and will kill the process.
+
+## Exercise 10 & 11
+
+Code is done. `user/faultalloc` and `user/faultallocbad` behave differently because the latter checks memory permissions before dereferencing said memory. Since the memory address referenced has not yet been mapped, the assertion fails and the process is destroyed. On the other hand `user/faultalloc` dereferences the memory location directly through `cprintf()`, which allows our handler to process the fault.
