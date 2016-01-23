@@ -395,7 +395,7 @@ page_fault_handler(struct Trapframe *tf)
 	// stack pointer is out of bounds.
 	if (curenv->env_pgfault_upcall == NULL ||
 		tf->tf_esp > UXSTACKTOP ||
-		(tf->tf_esp > USTACKTOP && tf->tf_esp < UXSTACKTOP - PGSIZE))
+		(tf->tf_esp > USTACKTOP && tf->tf_esp < (UXSTACKTOP - PGSIZE)))
 	{
 		cprintf("[%08x] user fault va %08x ip %08x\n",
 			curenv->env_id, fault_va, tf->tf_eip);
