@@ -414,8 +414,6 @@ load_icode(struct Env *e, uint8_t *binary)
 
 	region_alloc(e, (void *) (USTACKTOP - PGSIZE), PGSIZE);
 
-	// Go back to using the kernel page directory
-	lcr3(PADDR(kern_pgdir));
 }
 
 //

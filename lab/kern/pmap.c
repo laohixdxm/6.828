@@ -179,8 +179,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
- 	uint32_t size = ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE);
- 	boot_map_region(kern_pgdir, UPAGES, size, PADDR(pages), PTE_U | PTE_P);
+ 	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -189,8 +188,7 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
- 	size = ROUNDUP(NENV * sizeof(struct Env), PGSIZE);
- 	boot_map_region(kern_pgdir, UENVS, size, PADDR(envs), PTE_U | PTE_P);
+ 	boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -430,7 +428,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 		if (new_page == NULL) // allocation failed
 			return NULL;
 		new_page->pp_ref += 1;
-		*pde = (page2pa(new_page) | PTE_P);
+		*pde = (page2pa(new_page) | PTE_P | PTE_U | PTE_W);
   	}
 	pte_t *pte_base = KADDR(PTE_ADDR(*pde));
 	return &pte_base[PTX(va)];
@@ -460,7 +458,6 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	while (current_va < end_va) {
 		pte = pgdir_walk(pgdir, (void *) current_va, true);
 		*pte = (current_pa | perm | PTE_P);
-		pgdir[PDX(current_va)] |= perm | PTE_P;
 		if (current_va == last_page_addr)
 			break;
 
