@@ -420,7 +420,7 @@ page_fault_handler(struct Trapframe *tf)
 	// checks two conditions:
 	// 1) if the user process mapped a page from UXSTACKTOP to UXSTACKTOP - PGSIZE
 	// 2) if we've ran over the exception stack, beyond UXSTACKTOP - PGSIZE
-	user_mem_assert(curenv, (void *) tf->tf_esp, 1, PTE_W | PTE_U);
+	user_mem_assert(curenv, (void *) exception_stack_top, 1, PTE_W | PTE_U);
 
 	// Write the UTrapframe to the exception stack
 	struct UTrapframe *u_tf = (struct UTrapframe *) exception_stack_top;

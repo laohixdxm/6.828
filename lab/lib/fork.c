@@ -31,7 +31,7 @@ pgfault(struct UTrapframe *utf)
 
 	void *page_aligned_addr = (void *) ROUNDDOWN(addr, PGSIZE);
 	uint32_t page_num = (uint32_t) page_aligned_addr / PGSIZE;
-	if (uvpt[page_num] & PTE_COW)
+	if (!(uvpt[page_num] & PTE_COW))
 		panic("pgfault: fault was not on a copy-on-write page\n");
 
 	// LAB 4: Your code here.
@@ -45,7 +45,7 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 
 	// Allocate
-	if ((r = sys_page_alloc(thisenv->env_id, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0)
+	if ((r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0)
 		panic("sys_page_alloc: %e\n");
 
 	// Copy over
@@ -53,7 +53,7 @@ pgfault(struct UTrapframe *utf)
 	memmove(PFTEMP, src_addr, PGSIZE);
 
 	// Remap
-	if ((r = sys_page_map(thisenv->env_id, PFTEMP, thisenv->env_id, src_addr, PTE_P | PTE_U | PTE_W)) < 0)
+	if ((r = sys_page_map(0, PFTEMP, 0, src_addr, PTE_P | PTE_U | PTE_W)) < 0)
 		panic("sys_page_map: %e\n");
 
 }
@@ -141,7 +141,8 @@ fork(void)
 	uint32_t page_num;
 	pte_t *pte;
 	for (page_num = 0; page_num < PGNUM(UTOP - PGSIZE); page_num++) {
-		if ((uvpd[ROUNDDOWN(page_num, NPDENTRIES)] & PTE_P) == PTE_P &&
+		uint32_t pdx = ROUNDDOWN(page_num, NPDENTRIES) / NPDENTRIES;
+		if ((uvpd[pdx] & PTE_P) == PTE_P &&
 			((uvpt[page_num] & PTE_P) == PTE_P)) {
 				duppage(child_envid, page_num);
 		}
@@ -150,7 +151,7 @@ fork(void)
 	// Allocate exception stack space for child. The child can't do this themselves
 	// because the mechanism by which it would is to run the pgfault handler, which
 	// needs to run on the exception stack (catch 22).
-	if ((r = sys_page_alloc(child_envid, (void *) (UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W)) < 0)
+	if ((r = sys_page_alloc(child_envid, (void *) (UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
 		panic("sys_page_alloc: %e\n", r);
 
 	// Set page fault handler for the child

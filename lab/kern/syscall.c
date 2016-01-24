@@ -97,7 +97,6 @@ sys_exofork(void)
 	new_env->env_status = ENV_NOT_RUNNABLE;
 
 	memmove((void *) &new_env->env_tf, (void *) &curenv->env_tf, sizeof(struct Trapframe));
-	// new_env->env_tf = curenv->env_tf;
 	new_env->env_tf.tf_regs.reg_eax = 0;
 
 	return new_env->env_id;
