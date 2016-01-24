@@ -267,14 +267,14 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_cs = GD_UT | 3;
 	// You will set e->env_tf.tf_eip later.
 
-	// Enable interrupts while in user mode.
-	// LAB 4: Your code here.
-
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
 
 	// Also clear the IPC receiving flag.
 	e->env_ipc_recving = 0;
+
+	// Set FL_IF so that user environments run with interrupts enabled
+	e->env_tf.tf_eflags |= FL_IF;
 
 	// commit the allocation
 	env_free_list = e->env_link;
@@ -386,9 +386,6 @@ load_icode(struct Env *e, uint8_t *binary)
 	// When we switch to the user environment we need to start executing
 	// at the eip pointed to by the e_entry field of the elf_header
 	e->env_tf.tf_eip = elf_header->e_entry;
-
-	// e_flags are the flags the process expects to start executing with
-	e->env_tf.tf_eflags = elf_header->e_flags;
 
 	// We must load the env_pgdir because we're going to be copying data
 	// into user pages
