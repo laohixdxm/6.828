@@ -26,16 +26,16 @@ typedef int32_t envid_t;
 // stands for the current environment.
 
 #define LOG2NENV		10
-#define NENV			(1 << LOG2NENV)
+#define NENV			(1 << LOG2NENV) // 512 in decimal
 #define ENVX(envid)		((envid) & (NENV - 1))
 
 // Values of env_status in struct Env
 enum {
 	ENV_FREE = 0,
-	ENV_DYING,
-	ENV_RUNNABLE,
-	ENV_RUNNING,
-	ENV_NOT_RUNNABLE
+	ENV_DYING, // 1
+	ENV_RUNNABLE, // 2
+	ENV_RUNNING, // 3
+	ENV_NOT_RUNNABLE // 4
 };
 
 // Special environment types

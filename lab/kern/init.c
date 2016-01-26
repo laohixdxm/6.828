@@ -59,12 +59,10 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Touch all you want.
-	// ENV_CREATE(user_primes, ENV_TYPE_USER);
-	//ENV_CREATE(user_yield, ENV_TYPE_USER);
-	//ENV_CREATE(user_yield, ENV_TYPE_USER);
-	//ENV_CREATE(user_yield, ENV_TYPE_USER);
-	//ENV_CREATE(user_forktree, ENV_TYPE_USER);
-	ENV_CREATE(user_spin, ENV_TYPE_USER);
+	ENV_CREATE(user_primes, ENV_TYPE_USER);
+	// ENV_CREATE(user_yield, ENV_TYPE_USER);
+	// ENV_CREATE(user_yield, ENV_TYPE_USER);
+	// ENV_CREATE(user_yield, ENV_TYPE_USER);
 
 #endif // TEST*
 
