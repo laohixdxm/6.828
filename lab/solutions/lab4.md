@@ -43,3 +43,13 @@ Code is done. If the user environment runs out of space on the exception stack, 
 ## Exercise 10 & 11
 
 Code is done. `user/faultalloc` and `user/faultallocbad` behave differently because the latter checks memory permissions before dereferencing said memory. Since the memory address referenced has not yet been mapped, the assertion fails and the process is destroyed. On the other hand `user/faultalloc` dereferences the memory location directly through `cprintf()`, which allows our handler to process the fault.
+
+## Exercise 12
+
+Code is done. This exercise took me a while because I had to go back to code I wrote in previous labs and fix some things. For example, I was setting the wrong permissions on PDE, causing page faults when trying to re-map those entries in `duppage()`. In addition, I was creating the PDE in `boot_map_region()` instead of the place where those entries are initially mapped, namely in `pgdir_walk()`.
+
+## Exercises 13, 14 & 15
+
+Code is done. These took a while as well because again I had to go back in previous code I had written and fix mistakes :). For example, the timer interrupt was being masked even after I explicitly set the interrupt flag in `env_alloc()`. It turns out I was overwriting the EFLAGS value in `load_icode()`. While reading the ELF spec I noticed that as part of the header there's an EFLAGS value, with which the process expects to start executing. That value was always 0 and therefore cleared the interrupt flag I was setting before.
+
+I also had an incorrect scheduler. Instead of starting from the next process after the current one, the loop always started from the beginning.
