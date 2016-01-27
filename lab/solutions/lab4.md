@@ -53,3 +53,63 @@ Code is done. This exercise took me a while because I had to go back to code I w
 Code is done. These took a while as well because again I had to go back in previous code I had written and fix mistakes :). For example, the timer interrupt was being masked even after I explicitly set the interrupt flag in `env_alloc()`. It turns out I was overwriting the EFLAGS value in `load_icode()`. While reading the ELF spec I noticed that as part of the header there's an EFLAGS value, with which the process expects to start executing. That value was always 0 and therefore cleared the interrupt flag I was setting before.
 
 I also had an incorrect scheduler. Instead of starting from the next process after the current one, the loop always started from the beginning.
+
+## Challenge
+
+I chose to extend the scheduler. I introduced three levels of scheduling priority: `ENV_HI_PRIORITY`, `ENV_MED_PRIORITY` and `ENV_LOW_PRIORITY`. All environments are created with a medium priority unless explicitly set. I chose to set the priority via the `env_create()` function. An alternative would be to use system calls so that processes can change their own priority. This is very similar to Linux's `nice` utility, which allows users to set process priority.
+
+The new scheduler will first look for an `ENV_HI_PRIORITY` environment that is runnable, **other than the environment currently executing**. If it doesn't find one, it will drop priority to `ENV_MED_PRIORITY` and so on. This prolongs the runtime of scheduling an environment from O(n) to 3*O(n), the factor of three coming from the three priority levels. This is too slow for a real, production kernel where more efficient algorithms and data structures would be required.
+
+A possible improvement would be to use [multi level feedback queues](http://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched-mlfq.pdf). The goal of MLFQ is to adaptively adjust the priorities of processes so as to favor (give higher priority to) processes that are short lived (preserving the responsiveness of the system) and those that are I/O bound. The space and runtime complexity of this scheduling algorithm would be only slight better at O(n). Another improvement would be what the Linux kernel is currently running, namely the [Completely Fair Scheduler](https://en.wikipedia.org/wiki/Completely_Fair_Scheduler), which can pick a next process to run in constant time but takes O(logN) to re-insert the process for future scheduling.
+
+In order to test my changes, I spawned four instances of the `yield.c` user program on a single CPU. I gave two instances a high priority, I gave one a medium priority and one a low priority. The results of the run are included below:
+
+```
+SMP: CPU 0 found 1 CPU(s)
+enabled interrupts: 1 2
+[00000000] new env 00001000
+[00000000] new env 00001001
+[00000000] new env 00001002
+[00000000] new env 00001003
+Hello, I am environment 00001001 with priority 0.
+Hello, I am environment 00001000 with priority 0.
+Back in environment 00001001, iteration 0.
+Back in environment 00001000, iteration 0.
+Back in environment 00001001, iteration 1.
+Back in environment 00001000, iteration 1.
+Back in environment 00001001, iteration 2.
+Back in environment 00001000, iteration 2.
+Back in environment 00001001, iteration 3.
+Back in environment 00001000, iteration 3.
+Back in environment 00001001, iteration 4.
+All done in environment 00001001.
+[00001001] exiting gracefully
+[00001001] free env 00001001
+Hello, I am environment 00001002 with priority 1.
+Back in environment 00001000, iteration 4.
+All done in environment 00001000.
+[00001000] exiting gracefully
+[00001000] free env 00001000
+Back in environment 00001002, iteration 0.
+Hello, I am environment 00001003 with priority 2.
+Back in environment 00001002, iteration 1.
+Back in environment 00001003, iteration 0.
+Back in environment 00001002, iteration 2.
+Back in environment 00001003, iteration 1.
+Back in environment 00001002, iteration 3.
+Back in environment 00001003, iteration 2.
+Back in environment 00001002, iteration 4.
+All done in environment 00001002.
+[00001002] exiting gracefully
+[00001002] free env 00001002
+Back in environment 00001003, iteration 3.
+Back in environment 00001003, iteration 4.
+All done in environment 00001003.
+[00001003] exiting gracefully
+[00001003] free env 00001003
+No runnable environments in the system!
+```
+
+First thing to note is that we're running on 1 CPU. If we ran this experiment on 4 CPUs, then each CPU would run a process, making priorities irrelevant. Ideally, in order to evaluate the effectiveness of priority scheduling you need to run more processes than there are CPUs and it is easiest to judge correctness when you only have 1 CPU. Reminder: a priority of 0 means high and a priority of 2 means low.
+
+We correctly schedule between `00001000` and `00001001`, both of which are high priority, until both have terminated. We then alternate between `00001002` and `00001003`. However, we're scheduling between medium and low priorities here; why don't we run out the medium priority process before jumping on the low priority one? Remember that when we jump into the scheduler from a medium priority process, we look for **another process at the next highest priority** (otherwise a high priority process could just spin the CPU and never relinquish control). In our case, there's nothing other than `00001002` at medium priority, so we have to downgrade to low priority and run `00001003`.

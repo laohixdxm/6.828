@@ -56,13 +56,14 @@ i386_init(void)
 
 #if defined(TEST)
 	// Don't touch -- used by grading script!
-	ENV_CREATE(TEST, ENV_TYPE_USER);
+	ENV_CREATE(TEST, ENV_TYPE_USER, ENV_MED_PRIORITY);
 #else
 	// Touch all you want.
-	ENV_CREATE(user_primes, ENV_TYPE_USER);
-	// ENV_CREATE(user_yield, ENV_TYPE_USER);
-	// ENV_CREATE(user_yield, ENV_TYPE_USER);
-	// ENV_CREATE(user_yield, ENV_TYPE_USER);
+	// ENV_CREATE(user_primes, ENV_TYPE_USER, ENV_MED_PRIORITY);
+	ENV_CREATE(user_yield, ENV_TYPE_USER, ENV_HI_PRIORITY);
+	ENV_CREATE(user_yield, ENV_TYPE_USER, ENV_HI_PRIORITY);
+	ENV_CREATE(user_yield, ENV_TYPE_USER, ENV_MED_PRIORITY);
+	ENV_CREATE(user_yield, ENV_TYPE_USER, ENV_LOW_PRIORITY);
 
 #endif // TEST*
 

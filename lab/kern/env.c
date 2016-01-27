@@ -245,6 +245,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_type = ENV_TYPE_USER;
 	e->env_status = ENV_RUNNABLE;
 	e->env_runs = 0;
+	e->priority = ENV_MED_PRIORITY;
 
 	// Clear out all the saved register state,
 	// to prevent the register values
@@ -421,7 +422,7 @@ load_icode(struct Env *e, uint8_t *binary)
 // The new env's parent ID is set to 0.
 //
 void
-env_create(uint8_t *binary, enum EnvType type)
+env_create(uint8_t *binary, enum EnvType type, enum EnvPriority priority)
 {
 	// LAB 3: Your code here.
 
@@ -432,6 +433,7 @@ env_create(uint8_t *binary, enum EnvType type)
 	if (ret_code != 0)
 		panic("env_create: %e", ret_code);
 
+	e->priority = priority;
 	load_icode(e, binary);
 
 	e->env_type = type;
