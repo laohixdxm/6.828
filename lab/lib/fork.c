@@ -46,7 +46,7 @@ pgfault(struct UTrapframe *utf)
 
 	// Allocate
 	if ((r = sys_page_alloc(0, PFTEMP, PTE_P | PTE_U | PTE_W)) < 0)
-		panic("sys_page_alloc: %e\n");
+		panic("sys_page_alloc: %e\n", r);
 
 	// Copy over
 	void *src_addr = (void *) ROUNDDOWN(addr, PGSIZE);
@@ -54,7 +54,7 @@ pgfault(struct UTrapframe *utf)
 
 	// Remap
 	if ((r = sys_page_map(0, PFTEMP, 0, src_addr, PTE_P | PTE_U | PTE_W)) < 0)
-		panic("sys_page_map: %e\n");
+		panic("sys_page_map: %e\n", r);
 
 }
 
